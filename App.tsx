@@ -7,7 +7,7 @@ import { Statistics } from './components/Statistics';
 import { ConcertForm } from './components/ConcertForm';
 import { AuthModal } from './components/AuthModal';
 import { Concert } from './types';
-import { Loader2 } from 'lucide-react';
+import { Loader2, Ticket } from 'lucide-react';
 
 function App() {
   const { concerts, loading, addConcert, updateConcert, deleteConcert } = useConcerts();
@@ -43,6 +43,12 @@ function App() {
         
         {/* Header - Centered as requested */}
         <header className="mb-8 md:mb-12 flex flex-col items-center text-center gap-4">
+          <div className="animate-in zoom-in duration-700 delay-100 relative group">
+             <div className="absolute inset-0 bg-indigo-500 blur-2xl opacity-20 group-hover:opacity-30 transition-opacity rounded-full"></div>
+             <div className="relative p-4 bg-slate-800/50 rounded-2xl border border-slate-700/50 shadow-2xl backdrop-blur-sm transform group-hover:scale-105 transition-transform duration-300">
+               <Ticket size={48} className="text-indigo-400 drop-shadow-[0_0_15px_rgba(129,140,248,0.5)]" />
+             </div>
+          </div>
           <div>
             <h1 className="text-4xl md:text-6xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-indigo-400 via-purple-400 to-pink-400 animate-in fade-in slide-in-from-top-4 duration-700">
               My Concert Journal
