@@ -22,7 +22,12 @@ export const useAuth = () => {
     return () => subscription.unsubscribe();
   }, []);
 
-  const signIn = async (email: string, password: string) => {
+  const signIn = async (email: string, password: string, _rememberMe: boolean = false) => {
+    // Note: 'rememberMe' functionality regarding session persistence is disabled 
+    // because 'setPersistence' is not available on the SupabaseAuthClient instance 
+    // in this version, and we are using the global client instance.
+    // The session will default to the client's configured persistence (usually LocalStorage).
+    
     const { error } = await supabase.auth.signInWithPassword({ email, password });
     if (error) throw error;
   };

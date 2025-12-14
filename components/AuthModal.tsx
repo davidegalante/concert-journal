@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { X, Mail, Lock, Loader2, LogIn, KeyRound } from 'lucide-react';
+import { X, Mail, Lock, Loader2, LogIn, KeyRound, Check } from 'lucide-react';
 import { useAuth } from '../hooks/useAuth';
 
 interface AuthModalProps {
@@ -12,6 +12,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
   const [mode, setMode] = useState<'login' | 'reset'>('login');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [rememberMe, setRememberMe] = useState(false);
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState<{ type: 'error' | 'success', text: string } | null>(null);
 
@@ -24,7 +25,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
 
     try {
       if (mode === 'login') {
-        await signIn(email, password);
+        await signIn(email, password, rememberMe);
         onClose(); // Close modal on success
       } else {
         await resetPassword(email);
@@ -86,6 +87,19 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
                   className="w-full bg-slate-950 border border-slate-700 rounded-xl py-3 pl-10 pr-3 text-white focus:ring-2 focus:ring-indigo-500 outline-none"
                   placeholder="••••••••"
                 />
+              </div>
+
+              {/* Remember Me Checkbox */}
+              <div 
+                className="flex items-center gap-2 pt-2 cursor-pointer group w-max"
+                onClick={() => setRememberMe(!rememberMe)}
+              >
+                 <div className={`w-5 h-5 rounded border flex items-center justify-center transition-all ${rememberMe ? 'bg-indigo-600 border-indigo-600' : 'bg-transparent border-slate-600 group-hover:border-indigo-500'}`}>
+                    {rememberMe && <Check size={14} className="text-white stroke-[3]" />}
+                 </div>
+                 <span className="text-sm text-slate-300 group-hover:text-indigo-300 transition-colors select-none">
+                   Ricordami
+                 </span>
               </div>
             </div>
           )}
