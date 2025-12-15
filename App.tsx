@@ -36,6 +36,12 @@ function App() {
     }
   };
 
+  const handleSetView = (newView: 'list' | 'stats') => {
+    setView(newView);
+    // Force scroll to top when changing views to prevent being stuck in the middle of the page
+    window.scrollTo({ top: 0, behavior: 'instant' });
+  };
+
   return (
     <div className="min-h-screen bg-slate-900 text-slate-50 selection:bg-indigo-500 selection:text-white pb-32 md:pb-24">
       {/* Changed max-w-3xl to max-w-7xl for full width experience */}
@@ -107,7 +113,7 @@ function App() {
 
       <Navbar 
         currentView={view} 
-        setView={setView} 
+        setView={handleSetView} 
         onAddClick={handleAddClick}
         user={user}
         onLoginClick={() => setIsAuthOpen(true)}

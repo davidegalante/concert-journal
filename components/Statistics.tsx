@@ -1,7 +1,8 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell, CartesianGrid } from 'recharts';
 import { Concert } from '../types';
-import { TrendingUp, DollarSign, Calendar, Music, Crown, X, MapPin, ArrowRight, ExternalLink } from 'lucide-react';
+import { TrendingUp, DollarSign, Calendar, Music, Crown, X, MapPin, ArrowRight } from 'lucide-react';
 
 interface StatisticsProps {
   concerts: Concert[];
@@ -9,6 +10,18 @@ interface StatisticsProps {
 
 export const Statistics: React.FC<StatisticsProps> = ({ concerts }) => {
   const [selectedArtist, setSelectedArtist] = useState<string | null>(null);
+
+  // Lock scroll when modal is open
+  useEffect(() => {
+    if (selectedArtist) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = '';
+    }
+    return () => {
+      document.body.style.overflow = '';
+    };
+  }, [selectedArtist]);
 
   // 1. Calculate Summary Stats
   const totalSpent = concerts.reduce((acc, c) => acc + c.cost, 0);
@@ -26,7 +39,6 @@ export const Statistics: React.FC<StatisticsProps> = ({ concerts }) => {
     if (lower === 'poe') return 'POE';
     
     // Standard Title Case for grouping consistency
-    // This ensures "simple plan" and "Simple Plan" group together as "Simple Plan"
     return n.split(' ').map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase()).join(' ');
   };
 
@@ -35,7 +47,6 @@ export const Statistics: React.FC<StatisticsProps> = ({ concerts }) => {
   const uniqueArtists = new Set<string>();
 
   concerts.forEach(c => {
-    // Split by comma
     const artists = c.band.split(',').map(s => s.trim());
     artists.forEach(artist => {
       const normalized = normalizeArtist(artist);
@@ -49,7 +60,7 @@ export const Statistics: React.FC<StatisticsProps> = ({ concerts }) => {
   const totalArtists = uniqueArtists.size;
 
   // 2. Prepare Chart Data (Spend per Year)
-  const years = Array.from(new Set(concerts.map(c => c.year))).sort((a, b) => a - b);
+  const years = Array.from(new Set(concerts.map(c => Number(c.year)))).sort((a: number, b: number) => a - b);
   const dataByYear = years.map(year => {
     const yearlyConcerts = concerts.filter(c => c.year === year);
     return {
@@ -81,6 +92,11 @@ export const Statistics: React.FC<StatisticsProps> = ({ concerts }) => {
 
   return (
     <div className="space-y-8 pb-28 relative">
+      {/* Styles to remove outline from charts */}
+      <style>{`
+        .recharts-wrapper, .recharts-surface, .recharts-layer { outline: none !important; border: none !important; }
+        *:focus { outline: none !important; }
+      `}</style>
       
       {/* KPI Cards */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4 animate-card" style={{ animationDelay: '0s' }}>
@@ -125,14 +141,13 @@ export const Statistics: React.FC<StatisticsProps> = ({ concerts }) => {
       <div className="grid md:grid-cols-2 gap-6">
         
         {/* Money per Year */}
-        {/* Removed animate-card from here to prevent sizing issues during initial render */}
         <div className="glass-panel rounded-3xl p-6">
           <div className="flex items-center justify-between mb-6">
             <h3 className="text-lg font-bold text-white">Spesa annuale</h3>
             <div className="text-xs text-slate-400 bg-slate-800 px-2 py-1 rounded">EUR (€)</div>
           </div>
-          <div className="h-64 w-full min-w-0">
-            <ResponsiveContainer width="100%" height="100%" minWidth={0}>
+          <div className="h-64 w-full min-w-0" style={{ outline: 'none' }}>
+            <ResponsiveContainer width="100%" height="100%" minWidth={0} className="outline-none">
               <BarChart data={dataByYear}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#334155" vertical={false} opacity={0.5} />
                 <XAxis 
@@ -158,14 +173,15 @@ export const Statistics: React.FC<StatisticsProps> = ({ concerts }) => {
                     borderColor: '#334155', 
                     color: '#f8fafc',
                     borderRadius: '8px',
-                    boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.5)'
+                    boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.5)',
+                    outline: 'none'
                   }}
                   itemStyle={{ color: '#818cf8' }}
                   formatter={(value: number) => [`€${value.toFixed(2)}`, 'Spesa']}
                 />
-                <Bar dataKey="spent" radius={[6, 6, 0, 0]} animationDuration={1500}>
+                <Bar dataKey="spent" radius={[6, 6, 0, 0]} animationDuration={1500} isAnimationActive={true}>
                   {dataByYear.map((entry, index) => (
-                    <Cell key={`cell-${index}`} fill="url(#colorGradient)" />
+                    <Cell key={`cell-${index}`} fill="url(#colorGradient)" stroke="none" />
                   ))}
                 </Bar>
                 <defs>
@@ -226,11 +242,11 @@ export const Statistics: React.FC<StatisticsProps> = ({ concerts }) => {
         </div>
       </div>
 
-      {/* Artist Detail Modal */}
-      {selectedArtist && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-in fade-in duration-200" onClick={() => setSelectedArtist(null)}>
+      {/* Artist Detail Modal - Uses Portal to ensure full screen coverage */}
+      {selectedArtist && createPortal(
+        <div className="fixed inset-0 z-[9999] h-[100dvh] w-screen flex items-center justify-center p-4 bg-black/90 backdrop-blur-xl animate-in fade-in duration-300" onClick={() => setSelectedArtist(null)}>
           <div 
-            className="bg-slate-900 border border-slate-700 w-full max-w-md rounded-2xl shadow-2xl overflow-hidden animate-in zoom-in-95 duration-300"
+            className="bg-slate-900 border border-slate-700 w-full max-w-md rounded-2xl shadow-2xl overflow-hidden animate-in zoom-in-95 duration-300 relative"
             onClick={(e) => e.stopPropagation()} 
           >
             <div className="p-5 border-b border-slate-800 flex justify-between items-center bg-slate-800/50">
@@ -248,7 +264,7 @@ export const Statistics: React.FC<StatisticsProps> = ({ concerts }) => {
               </button>
             </div>
 
-            <div className="p-0 max-h-[60vh] overflow-y-auto">
+            <div className="p-0 max-h-[60vh] overflow-y-auto custom-scrollbar">
               {selectedArtistConcerts.map((concert, i) => (
                 <div key={i} className="p-4 border-b border-slate-800/50 last:border-0 hover:bg-slate-800/30 transition-colors">
                   <div className="flex justify-between items-start mb-2">
@@ -271,7 +287,8 @@ export const Statistics: React.FC<StatisticsProps> = ({ concerts }) => {
               ))}
             </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
 
     </div>

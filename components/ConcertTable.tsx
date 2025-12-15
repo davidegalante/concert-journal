@@ -46,7 +46,7 @@ export const ConcertTable: React.FC<ConcertTableProps> = ({ concerts, onEdit, on
 
   // Derive unique options for filters
   const availableYears = useMemo(() => {
-    const years = Array.from(new Set(concerts.map(c => c.year))).sort((a, b) => b - a);
+    const years = Array.from(new Set(concerts.map(c => Number(c.year)))).sort((a: number, b: number) => b - a);
     return years;
   }, [concerts]);
 
