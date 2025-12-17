@@ -3,22 +3,40 @@ name: Supabase Keep Alive
 on:
   schedule:
     - cron: '0 0 * * *' # Esegue ogni giorno a mezzanotte
-  workflow_dispatch: # Permette di testarlo manualmente (IMPORTANTE)
+  workflow_dispatch: # Permette di testarlo manualmente
 
 jobs:
   ping:
     runs-on: ubuntu-latest
     permissions:
-      contents: write # Serve per resettare il timer dei 60 giorni
+      contents: write # INDISPENSABILE: serve per permettere il git push
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
 
       - name: Esegui Script Keep-Alive
+        # Assicurati che il nome qui corrisponda esattamente al file nella cartella scripts
         run: node scripts/keep-alive.js
         env:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
 
-     # - name: Keepalive Workflow (Reset 60 giorni)
-     #   uses: gautamkrishnar/keepalive-workflow@v2
+      - name: Auto-Commit per evitare disattivazione (Solo il 1° del mese)
+        run: |
+          # Prende il giorno attuale (es. 01, 15, 30)
+          DAY=$(date +%d)
+          
+          # Se è il giorno 01 OPPURE se è un avvio manuale (workflow_dispatch)
+          if [ "$DAY" = "01" ] || [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            echo "È il primo del mese (o test manuale): Eseguo commit keep-alive."
+            
+            git config --global user.name "GitHub Action KeepAlive"
+            git config --global user.email "action@github.com"
+            
+            # Crea un commit vuoto che non modifica file, ma aggiorna l'attività del repo
+            git commit --allow-empty -m "keepalive: monthly workflow activity"
+            
+            git push
+          else
+            echo "Oggi è il giorno $DAY. Nessun commit necessario."
+          fi
