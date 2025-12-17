@@ -23,9 +23,13 @@ console.log(`Paging Supabase: ${SUPABASE_URL}...`);
 const req = https.get(url, options, (res) => {
   if (res.statusCode >= 200 && res.statusCode < 400) {
     console.log(`✅ Status: ${res.statusCode}. Il database è SVEGLIO!`);
+    
+    // AGGIUNGI QUESTA RIGA:
+    process.exit(0); // Forza la chiusura immediata con successo
+    
   } else {
     console.error(`❌ Errore. Status: ${res.statusCode}`);
-    process.exit(1);
+    process.exit(1); // Forza la chiusura con errore
   }
 });
 
