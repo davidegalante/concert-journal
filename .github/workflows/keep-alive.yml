@@ -20,5 +20,5 @@ jobs:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
 
-      - name: Keepalive Workflow (Reset 60 giorni)
-        uses: gautamkrishnar/keepalive-workflow@v2
+     # - name: Keepalive Workflow (Reset 60 giorni)
+     #   uses: gautamkrishnar/keepalive-workflow@v2
