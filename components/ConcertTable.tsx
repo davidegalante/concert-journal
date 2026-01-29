@@ -7,6 +7,7 @@ interface ConcertTableProps {
   concerts: Concert[];
   onEdit: (concert: Concert) => void;
   onDelete: (id: string) => void;
+  onArtistClick: (artistName: string) => void;
   user: User | null;
   defaultSortOrder?: 'asc' | 'desc';
   emptyMessage?: string;
@@ -16,6 +17,7 @@ export const ConcertTable: React.FC<ConcertTableProps> = ({
   concerts, 
   onEdit, 
   onDelete, 
+  onArtistClick,
   user,
   defaultSortOrder = 'desc',
   emptyMessage = "Nessun concerto trovato."
@@ -373,6 +375,9 @@ export const ConcertTable: React.FC<ConcertTableProps> = ({
             const isFuture = isFutureDate(concert.date);
             // Calculate delay for staggered animation based on index (max 10 items)
             const animationDelay = index < 15 ? `${index * 0.05}s` : '0s';
+            
+            // Split band string by comma to allow individual clicking
+            const artistsList = concert.band.split(',').map(s => s.trim());
 
             return (
               <div 
@@ -402,7 +407,7 @@ export const ConcertTable: React.FC<ConcertTableProps> = ({
                       <div className="flex flex-col gap-1 items-start min-w-0">
                           {isFuture && (
                             <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[9px] font-bold uppercase bg-indigo-500 text-white animate-pulse">
-                              <Rocket size={10} /> Future
+                              <Rocket size={10} /> Prossimamente
                             </span>
                           )}
                           <div className="px-2 py-1 rounded-md bg-slate-700/50 border border-slate-600/50 text-[10px] font-bold uppercase text-slate-300 tracking-wider truncate max-w-full" title={concert.event}>
@@ -420,8 +425,21 @@ export const ConcertTable: React.FC<ConcertTableProps> = ({
                 {/* Main Content */}
                 <div className="p-5 flex-1 flex flex-col justify-between gap-4">
                   <div>
-                    <h3 className="text-xl font-bold text-white leading-tight group-hover:text-indigo-300 transition-colors line-clamp-2" title={concert.band}>
-                      {concert.band}
+                    <h3 className="text-xl font-bold text-white leading-tight line-clamp-2" title={concert.band}>
+                      {artistsList.map((artist, idx) => (
+                        <span key={idx}>
+                          <span 
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              onArtistClick(normalizeArtist(artist));
+                            }}
+                            className="hover:text-indigo-400 hover:underline cursor-pointer transition-colors"
+                          >
+                            {artist}
+                          </span>
+                          {idx < artistsList.length - 1 && <span className="text-slate-500">, </span>}
+                        </span>
+                      ))}
                     </h3>
                     <div className="flex items-start gap-2 mt-3 text-sm text-slate-400">
                       <MapPin size={16} className="text-slate-500 mt-0.5 shrink-0" />

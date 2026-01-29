@@ -1,4 +1,5 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { useConcerts } from './hooks/useConcerts';
 import { useAuth } from './hooks/useAuth';
 import { Navbar } from './components/Navbar';
@@ -7,7 +8,7 @@ import { Statistics } from './components/Statistics';
 import { ConcertForm } from './components/ConcertForm';
 import { AuthModal } from './components/AuthModal';
 import { Concert } from './types';
-import { Loader2, Ticket } from 'lucide-react';
+import { Loader2, Ticket, Music, X, MapPin } from 'lucide-react';
 
 function App() {
   const { concerts, loading, addConcert, updateConcert, deleteConcert } = useConcerts();
@@ -17,6 +18,9 @@ function App() {
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [isAuthOpen, setIsAuthOpen] = useState(false);
   const [editingConcert, setEditingConcert] = useState<Concert | undefined>(undefined);
+  
+  // State for Artist History Modal
+  const [selectedArtistHistory, setSelectedArtistHistory] = useState<string | null>(null);
 
   const handleAddClick = () => {
     setEditingConcert(undefined);
@@ -42,6 +46,18 @@ function App() {
     window.scrollTo({ top: 0, behavior: 'instant' });
   };
 
+  // Lock scroll when artist modal is open
+  useEffect(() => {
+    if (selectedArtistHistory) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = '';
+    }
+    return () => {
+      document.body.style.overflow = '';
+    };
+  }, [selectedArtistHistory]);
+
   // Filter Logic for Views
   const { visibleConcerts, defaultSort } = useMemo(() => {
     const today = new Date();
@@ -54,10 +70,6 @@ function App() {
         defaultSort: 'asc' as const // Sort future events nearest first
       };
     } else if (view === 'list') {
-      // List view usually implies history, but usually users want to see everything or just past.
-      // Based on prompt "tracker concerti fatti e che farò", list shows ALL but we let the Table handle the visual distinction.
-      // Alternatively, we could filter just past. Let's show ALL in main list for completeness, 
-      // but prioritize DESC sort (most recent added/happened).
       return { 
         visibleConcerts: concerts, 
         defaultSort: 'desc' as const 
@@ -65,6 +77,33 @@ function App() {
     }
     return { visibleConcerts: concerts, defaultSort: 'desc' as const };
   }, [concerts, view]);
+
+  // Helper for Artist History
+  const normalizeArtist = (name: string) => {
+    const n = name.trim();
+    const lower = n.toLowerCase();
+    if (lower.replace(/\s/g, '') === 'bnkr44') return 'Bnkr44';
+    if (lower === 'wel') return 'WEL';
+    if (lower === 'wet') return 'WET';
+    if (lower === 'poe') return 'POE';
+    return n.split(' ').map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase()).join(' ');
+  };
+
+  const selectedArtistConcerts = useMemo(() => {
+    if (!selectedArtistHistory) return [];
+    return concerts.filter(c => {
+      const artists = c.band.split(',').map(s => normalizeArtist(s));
+      return artists.includes(selectedArtistHistory);
+    }).sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+  }, [concerts, selectedArtistHistory]);
+
+  const formatDate = (dateStr: string) => {
+    try {
+      return new Date(dateStr).toLocaleDateString('it-IT', { day: 'numeric', month: 'long', year: 'numeric' });
+    } catch {
+      return dateStr;
+    }
+  };
 
   return (
     <div className="min-h-screen bg-slate-900 text-slate-50 selection:bg-indigo-500 selection:text-white pb-32 md:pb-24">
@@ -114,6 +153,7 @@ function App() {
                   concerts={visibleConcerts} 
                   onEdit={handleEditClick} 
                   onDelete={deleteConcert}
+                  onArtistClick={setSelectedArtistHistory}
                   user={user}
                   defaultSortOrder={defaultSort}
                   emptyMessage={view === 'upcoming' ? "Nessun concerto in programma. Aggiungine uno!" : "Nessun concerto trovato."}
@@ -149,6 +189,62 @@ function App() {
            if(window.confirm("Vuoi davvero uscire?")) signOut();
         }}
       />
+
+      {/* Artist History Modal */}
+      {selectedArtistHistory && createPortal(
+        <div className="fixed inset-0 z-[9999] h-[100dvh] w-screen flex items-center justify-center p-4 bg-black/90 backdrop-blur-xl animate-in fade-in duration-300" onClick={() => setSelectedArtistHistory(null)}>
+          <div 
+            className="bg-slate-900 border border-slate-700 w-full max-w-md rounded-2xl shadow-2xl overflow-hidden animate-in zoom-in-95 duration-300 relative"
+            onClick={(e) => e.stopPropagation()} 
+          >
+            <div className="p-5 border-b border-slate-800 flex justify-between items-center bg-slate-800/50">
+              <div>
+                <h3 className="text-xl font-bold text-white flex items-center gap-2">
+                  <Music size={20} className="text-indigo-400" />
+                  {selectedArtistHistory}
+                </h3>
+                <p className="text-xs text-slate-400 mt-1">
+                  Hai visto questo artista <span className="text-white font-bold">{selectedArtistConcerts.length}</span> volte.
+                </p>
+              </div>
+              <button onClick={() => setSelectedArtistHistory(null)} className="p-2 rounded-full hover:bg-slate-800 text-slate-400 hover:text-white transition-colors">
+                <X size={20} />
+              </button>
+            </div>
+
+            <div className="p-0 max-h-[60vh] overflow-y-auto custom-scrollbar">
+              {selectedArtistConcerts.length === 0 ? (
+                <div className="p-8 text-center text-slate-500 text-sm">
+                  Nessun concerto trovato per questo artista.
+                </div>
+              ) : (
+                selectedArtistConcerts.map((concert, i) => (
+                  <div key={i} className="p-4 border-b border-slate-800/50 last:border-0 hover:bg-slate-800/30 transition-colors">
+                    <div className="flex justify-between items-start mb-2">
+                      <span className="text-xs font-bold text-indigo-300 bg-indigo-900/30 px-2 py-0.5 rounded border border-indigo-500/20">
+                        {formatDate(concert.date)}
+                      </span>
+                      <span className={`text-sm font-bold ${concert.cost === 0 ? 'text-green-400' : 'text-slate-300'}`}>
+                        {concert.cost === 0 ? 'FREE' : `€${concert.cost}`}
+                      </span>
+                    </div>
+                    <div className="font-semibold text-white mb-1 line-clamp-1">{concert.event}</div>
+                    <div className="flex items-center gap-1.5 text-xs text-slate-400">
+                      <MapPin size={12} />
+                      {concert.city}
+                    </div>
+                    <div className="mt-2 text-xs text-slate-500 italic line-clamp-1">
+                      Lineup: {concert.band}
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+          </div>
+        </div>,
+        document.body
+      )}
+
     </div>
   );
 }
