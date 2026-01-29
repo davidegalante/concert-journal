@@ -34,12 +34,12 @@ export const Navbar: React.FC<NavbarProps> = ({
 
       <button
         onClick={() => setView('upcoming')}
-        className={`flex flex-col items-center justify-center px-3 h-14 rounded-xl transition-all ${
+        className={`flex flex-col items-center justify-center w-14 sm:w-16 h-14 rounded-xl transition-all ${
           currentView === 'upcoming' ? 'bg-slate-800 text-indigo-400' : 'text-slate-400 hover:text-white hover:bg-slate-800/50'
         }`}
       >
         <CalendarClock size={20} className="mb-1" />
-        <span className="text-[9px] sm:text-[10px] font-medium">Prossimamente</span>
+        <span className="text-[9px] sm:text-[10px] font-medium">Agenda</span>
       </button>
 
       <button
