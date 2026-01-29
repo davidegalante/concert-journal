@@ -1,6 +1,6 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { Concert, PriceRange } from '../types';
-import { Search, MapPin, Calendar, Edit2, Trash2, Tag, Filter, X, ChevronDown, Mic2, Users } from 'lucide-react';
+import { Search, MapPin, Calendar, Edit2, Trash2, Tag, Filter, X, ChevronDown, Mic2, Users, Rocket } from 'lucide-react';
 import { User } from '@supabase/supabase-js';
 
 interface ConcertTableProps {
@@ -8,13 +8,27 @@ interface ConcertTableProps {
   onEdit: (concert: Concert) => void;
   onDelete: (id: string) => void;
   user: User | null;
+  defaultSortOrder?: 'asc' | 'desc';
+  emptyMessage?: string;
 }
 
-export const ConcertTable: React.FC<ConcertTableProps> = ({ concerts, onEdit, onDelete, user }) => {
+export const ConcertTable: React.FC<ConcertTableProps> = ({ 
+  concerts, 
+  onEdit, 
+  onDelete, 
+  user,
+  defaultSortOrder = 'desc',
+  emptyMessage = "Nessun concerto trovato."
+}) => {
   const [search, setSearch] = useState('');
   const [sortField, setSortField] = useState<'date' | 'cost'>('date');
-  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
+  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>(defaultSortOrder);
   
+  // Reset sorting when defaultSortOrder prop changes (e.g. switching views)
+  useEffect(() => {
+    setSortOrder(defaultSortOrder);
+  }, [defaultSortOrder]);
+
   // Advanced Filters State
   const [showFilters, setShowFilters] = useState(false);
   const [selectedYear, setSelectedYear] = useState<string>('all');
@@ -139,15 +153,18 @@ export const ConcertTable: React.FC<ConcertTableProps> = ({ concerts, onEdit, on
     }
   };
 
-  const getDayAndMonth = (dateStr: string) => {
+  const getDateDetails = (dateStr: string) => {
     try {
       const d = new Date(dateStr);
       const day = d.getDate();
-      const month = d.toLocaleDateString('it-IT', { month: 'short' }).toUpperCase();
+      const month = d.toLocaleDateString('it-IT', { month: 'short' }).toUpperCase().replace('.', '');
       const year = d.getFullYear();
-      return { day, month, year };
+      // Weekday handling
+      const weekday = d.toLocaleDateString('it-IT', { weekday: 'short' }).toUpperCase().replace('.', '');
+      
+      return { day, month, year, weekday };
     } catch {
-      return { day: '?', month: '???', year: '????' };
+      return { day: '?', month: '???', year: '????', weekday: '???' };
     }
   };
 
@@ -164,6 +181,14 @@ export const ConcertTable: React.FC<ConcertTableProps> = ({ concerts, onEdit, on
     (selectedType !== 'all' ? 1 : 0) + 
     (selectedPrice !== 'all' ? 1 : 0) + 
     (selectedArtist !== 'all' ? 1 : 0);
+  
+  // Helper to detect future dates
+  const isFutureDate = (dateStr: string) => {
+    const today = new Date();
+    today.setHours(0,0,0,0);
+    const concertDate = new Date(dateStr);
+    return concertDate >= today;
+  };
 
   return (
     <div className="space-y-6">
@@ -334,40 +359,55 @@ export const ConcertTable: React.FC<ConcertTableProps> = ({ concerts, onEdit, on
             <div className="w-20 h-20 bg-slate-800/50 rounded-full flex items-center justify-center mb-4">
               <Mic2 size={40} className="text-slate-600" />
             </div>
-            <p className="text-lg font-medium">Nessun concerto trovato.</p>
-            <p className="text-sm">Prova a cambiare i filtri.</p>
-            <button onClick={clearFilters} className="mt-4 px-4 py-2 bg-indigo-600 text-white rounded-lg text-sm hover:bg-indigo-500 transition-colors">
-              Mostra tutti
-            </button>
+            <p className="text-lg font-medium">{emptyMessage}</p>
+            {/* Only show "Reset Filter" if filters are active */}
+            {activeFiltersCount > 0 && (
+               <button onClick={clearFilters} className="mt-4 px-4 py-2 bg-indigo-600 text-white rounded-lg text-sm hover:bg-indigo-500 transition-colors">
+                 Resetta filtri
+               </button>
+            )}
           </div>
         ) : (
           filteredAndSortedConcerts.map((concert, index) => {
-            const { day, month, year } = getDayAndMonth(concert.date);
+            const { day, month, year, weekday } = getDateDetails(concert.date);
+            const isFuture = isFutureDate(concert.date);
             // Calculate delay for staggered animation based on index (max 10 items)
             const animationDelay = index < 15 ? `${index * 0.05}s` : '0s';
 
             return (
               <div 
                 key={concert.id}
-                className="animate-card group relative bg-slate-800 rounded-2xl overflow-hidden shadow-lg hover:shadow-2xl hover:shadow-indigo-900/20 transition-all duration-300 border border-slate-700/50 hover:border-indigo-500/30 flex flex-col h-full"
+                className={`animate-card group relative bg-slate-800 rounded-2xl overflow-hidden shadow-lg transition-all duration-300 flex flex-col h-full
+                  ${isFuture 
+                    ? 'border border-indigo-500/50 shadow-indigo-900/20 hover:shadow-indigo-500/20' 
+                    : 'border border-slate-700/50 hover:shadow-2xl hover:border-indigo-500/30'
+                  }`}
                 style={{ animationDelay }}
               >
                 {/* Background Decoration */}
                 <div className="absolute top-0 right-0 w-32 h-32 bg-indigo-600/5 rounded-full blur-3xl -mr-10 -mt-10 pointer-events-none"></div>
 
                 {/* Card Header with Date and Price */}
-                <div className="flex bg-slate-900/50 border-b border-slate-700/50">
+                <div className={`flex border-b ${isFuture ? 'bg-indigo-900/10 border-indigo-500/20' : 'bg-slate-900/50 border-slate-700/50'}`}>
                    {/* Date Stub */}
-                   <div className="p-4 flex flex-col items-center justify-center border-r border-slate-700/50 min-w-[80px]">
-                      <span className="text-xl font-black text-white">{day}</span>
-                      <span className="text-xs font-bold text-indigo-400 uppercase tracking-widest">{month}</span>
-                      <span className="text-[10px] text-slate-500 mt-1">{year}</span>
+                   <div className={`p-3 flex flex-col items-center justify-center border-r min-w-[70px] ${isFuture ? 'border-indigo-500/20' : 'border-slate-700/50'}`}>
+                      <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-0.5">{weekday}</span>
+                      <span className="text-xl font-black text-white leading-none">{day}</span>
+                      <span className="text-xs font-bold text-indigo-400 uppercase tracking-widest mt-1">{month}</span>
+                      <span className="text-[9px] text-slate-500 mt-0.5">{year}</span>
                    </div>
                    
                    {/* Top Info */}
                    <div className="flex-1 p-3 flex justify-between items-center gap-4 overflow-hidden">
-                      <div className="px-2 py-1 rounded-md bg-slate-700/50 border border-slate-600/50 text-[10px] font-bold uppercase text-slate-300 tracking-wider truncate" title={concert.event}>
-                          {concert.event}
+                      <div className="flex flex-col gap-1 items-start min-w-0">
+                          {isFuture && (
+                            <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[9px] font-bold uppercase bg-indigo-500 text-white animate-pulse">
+                              <Rocket size={10} /> Future
+                            </span>
+                          )}
+                          <div className="px-2 py-1 rounded-md bg-slate-700/50 border border-slate-600/50 text-[10px] font-bold uppercase text-slate-300 tracking-wider truncate max-w-full" title={concert.event}>
+                              {concert.event}
+                          </div>
                       </div>
                       <div className="text-right shrink-0">
                          <div className={`font-bold text-lg leading-tight ${concert.cost === 0 ? 'text-green-400' : 'text-white'}`}>

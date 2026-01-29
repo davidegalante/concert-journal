@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { useConcerts } from './hooks/useConcerts';
 import { useAuth } from './hooks/useAuth';
 import { Navbar } from './components/Navbar';
@@ -13,7 +13,7 @@ function App() {
   const { concerts, loading, addConcert, updateConcert, deleteConcert } = useConcerts();
   const { user, signOut } = useAuth();
   
-  const [view, setView] = useState<'list' | 'stats'>('list');
+  const [view, setView] = useState<'list' | 'stats' | 'upcoming'>('list');
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [isAuthOpen, setIsAuthOpen] = useState(false);
   const [editingConcert, setEditingConcert] = useState<Concert | undefined>(undefined);
@@ -36,11 +36,35 @@ function App() {
     }
   };
 
-  const handleSetView = (newView: 'list' | 'stats') => {
+  const handleSetView = (newView: 'list' | 'stats' | 'upcoming') => {
     setView(newView);
     // Force scroll to top when changing views to prevent being stuck in the middle of the page
     window.scrollTo({ top: 0, behavior: 'instant' });
   };
+
+  // Filter Logic for Views
+  const { visibleConcerts, defaultSort } = useMemo(() => {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0); // Normalize today to start of day
+
+    if (view === 'upcoming') {
+      const future = concerts.filter(c => new Date(c.date) >= today);
+      return { 
+        visibleConcerts: future, 
+        defaultSort: 'asc' as const // Sort future events nearest first
+      };
+    } else if (view === 'list') {
+      // List view usually implies history, but usually users want to see everything or just past.
+      // Based on prompt "tracker concerti fatti e che farò", list shows ALL but we let the Table handle the visual distinction.
+      // Alternatively, we could filter just past. Let's show ALL in main list for completeness, 
+      // but prioritize DESC sort (most recent added/happened).
+      return { 
+        visibleConcerts: concerts, 
+        defaultSort: 'desc' as const 
+      };
+    }
+    return { visibleConcerts: concerts, defaultSort: 'desc' as const };
+  }, [concerts, view]);
 
   return (
     <div className="min-h-screen bg-slate-900 text-slate-50 selection:bg-indigo-500 selection:text-white pb-32 md:pb-24">
@@ -57,16 +81,18 @@ function App() {
           </div>
           <div>
             <h1 className="text-4xl md:text-6xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-indigo-400 via-purple-400 to-pink-400 animate-in fade-in slide-in-from-top-4 duration-700">
-              My Concert Journal
+              {view === 'upcoming' ? 'Prossimi Eventi' : view === 'stats' ? 'Statistiche' : 'My Concert Journal'}
             </h1>
             <p className="text-slate-400 text-sm md:text-lg mt-3 max-w-2xl mx-auto leading-relaxed">
-              Il tuo diario musicale digitale. 
+              {view === 'upcoming' 
+                ? 'Il calendario dei tuoi futuri appuntamenti musicali.' 
+                : 'Il tuo diario musicale digitale.'} 
               {loading ? (
                  <span className="inline-flex items-center gap-2 ml-2 text-indigo-400 animate-pulse">
                    <Loader2 size={14} className="animate-spin" /> Sync...
                  </span>
               ) : (
-                 <> Hai partecipato a <strong className="text-white">{concerts.length}</strong> eventi finora.</>
+                 view !== 'upcoming' && view !== 'stats' && <> Hai partecipato a <strong className="text-white">{concerts.length}</strong> eventi finora.</>
               )}
             </p>
           </div>
@@ -81,15 +107,17 @@ function App() {
             </div>
           ) : (
             <>
-              {view === 'list' ? (
+              {view === 'stats' ? (
+                <Statistics concerts={concerts} />
+              ) : (
                 <ConcertTable 
-                  concerts={concerts} 
+                  concerts={visibleConcerts} 
                   onEdit={handleEditClick} 
                   onDelete={deleteConcert}
                   user={user}
+                  defaultSortOrder={defaultSort}
+                  emptyMessage={view === 'upcoming' ? "Nessun concerto in programma. Aggiungine uno!" : "Nessun concerto trovato."}
                 />
-              ) : (
-                <Statistics concerts={concerts} />
               )}
             </>
           )}

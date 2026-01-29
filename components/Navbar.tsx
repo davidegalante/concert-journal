@@ -1,10 +1,10 @@
 import React from 'react';
-import { Music, BarChart3, Plus, LogIn, LogOut, User as UserIcon } from 'lucide-react';
+import { Music, BarChart3, Plus, LogIn, LogOut, CalendarClock } from 'lucide-react';
 import { User } from '@supabase/supabase-js';
 
 interface NavbarProps {
-  currentView: 'list' | 'stats';
-  setView: (view: 'list' | 'stats') => void;
+  currentView: 'list' | 'stats' | 'upcoming';
+  setView: (view: 'list' | 'stats' | 'upcoming') => void;
   onAddClick: () => void;
   user: User | null;
   onLoginClick: () => void;
@@ -24,22 +24,32 @@ export const Navbar: React.FC<NavbarProps> = ({
       
       <button
         onClick={() => setView('list')}
-        className={`flex flex-col items-center justify-center w-16 h-14 rounded-xl transition-all ${
+        className={`flex flex-col items-center justify-center w-14 sm:w-16 h-14 rounded-xl transition-all ${
           currentView === 'list' ? 'bg-slate-800 text-indigo-400' : 'text-slate-400 hover:text-white hover:bg-slate-800/50'
         }`}
       >
         <Music size={20} className="mb-1" />
-        <span className="text-[10px] font-medium">Concerti</span>
+        <span className="text-[9px] sm:text-[10px] font-medium">Storico</span>
+      </button>
+
+      <button
+        onClick={() => setView('upcoming')}
+        className={`flex flex-col items-center justify-center w-14 sm:w-16 h-14 rounded-xl transition-all ${
+          currentView === 'upcoming' ? 'bg-slate-800 text-indigo-400' : 'text-slate-400 hover:text-white hover:bg-slate-800/50'
+        }`}
+      >
+        <CalendarClock size={20} className="mb-1" />
+        <span className="text-[9px] sm:text-[10px] font-medium">Futuri</span>
       </button>
 
       <button
         onClick={() => setView('stats')}
-        className={`flex flex-col items-center justify-center w-16 h-14 rounded-xl transition-all ${
+        className={`flex flex-col items-center justify-center w-14 sm:w-16 h-14 rounded-xl transition-all ${
           currentView === 'stats' ? 'bg-slate-800 text-indigo-400' : 'text-slate-400 hover:text-white hover:bg-slate-800/50'
         }`}
       >
         <BarChart3 size={20} className="mb-1" />
-        <span className="text-[10px] font-medium">Stats</span>
+        <span className="text-[9px] sm:text-[10px] font-medium">Stats</span>
       </button>
 
       {/* Divider */}
@@ -49,7 +59,7 @@ export const Navbar: React.FC<NavbarProps> = ({
         <>
           <button
             onClick={onAddClick}
-            className="flex items-center justify-center w-14 h-14 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl shadow-lg shadow-indigo-900/50 transition-transform active:scale-95"
+            className="flex items-center justify-center w-12 sm:w-14 h-14 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl shadow-lg shadow-indigo-900/50 transition-transform active:scale-95"
             title="Aggiungi Concerto"
           >
             <Plus size={24} />
@@ -57,20 +67,20 @@ export const Navbar: React.FC<NavbarProps> = ({
           
           <button
             onClick={onLogoutClick}
-            className="flex flex-col items-center justify-center w-16 h-14 rounded-xl text-slate-400 hover:text-red-400 hover:bg-red-500/10 transition-all"
+            className="flex flex-col items-center justify-center w-14 sm:w-16 h-14 rounded-xl text-slate-400 hover:text-red-400 hover:bg-red-500/10 transition-all"
             title="Esci"
           >
             <LogOut size={20} className="mb-1" />
-            <span className="text-[10px] font-medium">Esci</span>
+            <span className="text-[9px] sm:text-[10px] font-medium">Esci</span>
           </button>
         </>
       ) : (
         <button
           onClick={onLoginClick}
-          className="flex flex-col items-center justify-center w-16 h-14 rounded-xl text-slate-400 hover:text-indigo-400 hover:bg-indigo-500/10 transition-all"
+          className="flex flex-col items-center justify-center w-14 sm:w-16 h-14 rounded-xl text-slate-400 hover:text-indigo-400 hover:bg-indigo-500/10 transition-all"
         >
           <LogIn size={20} className="mb-1" />
-          <span className="text-[10px] font-medium">Accedi</span>
+          <span className="text-[9px] sm:text-[10px] font-medium">Accedi</span>
         </button>
       )}
 
