@@ -1,6 +1,6 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { Concert, PriceRange } from '../types';
-import { Search, MapPin, Calendar, Edit2, Trash2, Tag, Filter, X, ChevronDown, Mic2, Users, Rocket } from 'lucide-react';
+import { Search, MapPin, Calendar, Edit2, Trash2, Tag, Filter, X, ChevronDown, Mic2, Users, Rocket, ChevronUp } from 'lucide-react';
 import { User } from '@supabase/supabase-js';
 
 interface ConcertTableProps {
@@ -25,6 +25,9 @@ export const ConcertTable: React.FC<ConcertTableProps> = ({
   const [search, setSearch] = useState('');
   const [sortField, setSortField] = useState<'date' | 'cost'>('date');
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>(defaultSortOrder);
+  
+  // Track expanded state for cards with many artists
+  const [expandedConcerts, setExpandedConcerts] = useState<Set<string>>(new Set());
   
   // Reset sorting when defaultSortOrder prop changes (e.g. switching views)
   useEffect(() => {
@@ -153,6 +156,18 @@ export const ConcertTable: React.FC<ConcertTableProps> = ({
       setSortField(field);
       setSortOrder('desc'); 
     }
+  };
+
+  const toggleExpand = (id: string) => {
+    setExpandedConcerts(prev => {
+      const next = new Set(prev);
+      if (next.has(id)) {
+        next.delete(id);
+      } else {
+        next.add(id);
+      }
+      return next;
+    });
   };
 
   const getDateDetails = (dateStr: string) => {
@@ -378,6 +393,11 @@ export const ConcertTable: React.FC<ConcertTableProps> = ({
             
             // Split band string by comma to allow individual clicking
             const artistsList = concert.band.split(',').map(s => s.trim());
+            
+            // Logic for "See More"
+            const isExpanded = expandedConcerts.has(concert.id);
+            // Threshold for showing the toggle: more than 4 artists or very long text string
+            const isLongList = artistsList.length > 4 || concert.band.length > 65;
 
             return (
               <div 
@@ -425,7 +445,10 @@ export const ConcertTable: React.FC<ConcertTableProps> = ({
                 {/* Main Content */}
                 <div className="p-5 flex-1 flex flex-col justify-between gap-4">
                   <div>
-                    <h3 className="text-xl font-bold text-white leading-tight line-clamp-2" title={concert.band}>
+                    <h3 
+                      className={`text-xl font-bold text-white leading-tight ${isExpanded || !isLongList ? '' : 'line-clamp-2'}`} 
+                      title={!isExpanded ? concert.band : undefined}
+                    >
                       {artistsList.map((artist, idx) => (
                         <span key={idx}>
                           <span 
@@ -441,6 +464,24 @@ export const ConcertTable: React.FC<ConcertTableProps> = ({
                         </span>
                       ))}
                     </h3>
+                    
+                    {/* Expand/Collapse Button */}
+                    {isLongList && (
+                      <button 
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          toggleExpand(concert.id);
+                        }}
+                        className="flex items-center gap-1 text-xs font-bold text-indigo-400 hover:text-indigo-300 mt-2 transition-colors focus:outline-none"
+                      >
+                        {isExpanded ? (
+                          <>Mostra meno <ChevronUp size={12} /></>
+                        ) : (
+                          <>Mostra tutti ({artistsList.length}) <ChevronDown size={12} /></>
+                        )}
+                      </button>
+                    )}
+
                     <div className="flex items-start gap-2 mt-3 text-sm text-slate-400">
                       <MapPin size={16} className="text-slate-500 mt-0.5 shrink-0" />
                       <span className="line-clamp-1">{concert.city}</span>
