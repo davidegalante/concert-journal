@@ -42,7 +42,7 @@ jobs:
         uses: actions/setup-java@v4
         with:
           distribution: 'zulu'
-          java-version: '17'
+          java-version: '21'
 
       # 7. Permessi di esecuzione per Gradle (evita errori comuni)
       - name: Grant execute permission for gradlew
