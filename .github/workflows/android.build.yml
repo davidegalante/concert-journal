@@ -1,0 +1,62 @@
+name: Build Android APK
+
+on:
+  push:
+    branches:
+      - main  # Controlla se il tuo branch principale si chiama 'main' o 'master'
+
+jobs:
+  build:
+    name: Build APK
+    runs-on: ubuntu-latest
+    
+    steps:
+      # 1. Scarica il codice
+      - name: Checkout Source
+        uses: actions/checkout@v4
+
+      # 2. Prepara Node.js
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+
+      # 3. Installa le dipendenze
+      - name: Install Dependencies
+        run: npm ci --legacy-peer-deps
+
+      # 4. Crea la build React (con le chiavi segrete!)
+      - name: Build React App
+        env:
+          VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
+          VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
+        run: npm run build
+
+      # 5. Sincronizza Capacitor
+      - name: Sync Capacitor
+        run: npx cap sync android
+
+      # 6. Prepara Java (serve per Android)
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'zulu'
+          java-version: '17'
+
+      # 7. Permessi di esecuzione per Gradle (evita errori comuni)
+      - name: Grant execute permission for gradlew
+        run: chmod +x android/gradlew
+
+      # 8. Compila l'APK
+      - name: Build APK with Gradle
+        run: |
+          cd android
+          ./gradlew assembleDebug
+
+      # 9. Carica l'APK su GitHub per fartelo scaricare
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: app-debug
+          path: android/app/build/outputs/apk/debug/app-debug.apk
