@@ -2,7 +2,7 @@ name: Supabase Keep Alive
 
 on:
   schedule:
-    - cron: "0 14 * * *"
+    - cron: "0 */6 * * *"
   workflow_dispatch:
 
 jobs:
@@ -11,5 +11,5 @@ jobs:
     steps:
       - name: Ping Supabase
         run: |
-          curl -f https://mcclmbmtbsjusbkwslwv.supabase.co/rest/v1/ \
+          curl -f "https://mcclmbmtbsjusbkwslwv.supabase.co/rest/v1/concerts?select=*&limit=1" \
           -H "apikey: ${{ secrets.SUPABASE_ANON_KEY }}"
