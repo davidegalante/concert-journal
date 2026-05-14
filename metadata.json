@@ -1,5 +1,6 @@
 {
   "name": "My Concert Journal",
   "description": "A stylish application to track past and future concerts, manage expenses, and view statistics.",
-  "requestFramePermissions": []
+  "requestFramePermissions": [],
+  "majorCapabilities": []
 }
