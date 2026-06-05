@@ -2,8 +2,8 @@ name: Supabase Keep Alive
 
 on:
   schedule:
-    - cron: '0 8 * * *'  # ogni giorno alle 8:00 UTC
-  workflow_dispatch:      # permette di eseguirlo manualmente
+    - cron: '0 8 * * *'
+  workflow_dispatch:
 
 jobs:
   keepalive:
@@ -13,5 +13,14 @@ jobs:
         run: |
           curl -s "${{ secrets.SUPABASE_URL }}/rest/v1/concerts?limit=1" \
             -H "apikey: ${{ secrets.SUPABASE_ANON_KEY }}" \
-            -H "Authorization: Bearer ${{ secrets.SUPABASE_ANON_KEY }}" \
-            | echo "Response received"
+            -H "Authorization: Bearer ${{ secrets.SUPABASE_ANON_KEY }}"
+
+      - name: Keep repo alive
+        uses: actions/checkout@v3
+      - run: |
+          git config user.email "keepalive@bot.com"
+          git config user.name "KeepAlive Bot"
+          echo "last run: $(date)" > .keepalive
+          git add .keepalive
+          git commit -m "keepalive $(date +'%Y-%m-%d')" || echo "nothing to commit"
+          git push
